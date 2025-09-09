@@ -1,0 +1,56 @@
+<!-- chat-bubbles.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聊天气泡</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 10px; background-color: #e5ddd5; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        .chat-container { display: flex; flex-direction: column; gap: 10px; }
+        .message-bubble { padding: 8px 12px; border-radius: 12px; max-width: 80%; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,.1); font-size: 15px; line-height: 1.4; }
+        .left-bubble { background-color: #fff; color: #333; align-self: flex-start; border-top-left-radius: 0; }
+        .right-bubble { background-color: #dcf8c6; color: #333; align-self: flex-end; border-top-right-radius: 0; }
+    </style>
+</head>
+<body>
+    <div id="chat-container" class="chat-container"></div>
+    <script>
+        // 这个函数将被SillyTavern的加载器调用
+        function initializeChat(rawText) {
+            const chatContainer = document.getElementById('chat-container');
+            if (!rawText || !chatContainer) return;
+
+            chatContainer.innerHTML = ''; // 清空旧内容
+
+            const regex = /(\[.*?\]|[^\[\]]+)/g;
+            const parts = rawText.match(regex);
+
+            if (!parts) return;
+
+            parts.forEach(part => {
+                const content = part.trim();
+                if (content === '') return;
+
+                const bubble = document.createElement('div');
+                bubble.classList.add('message-bubble');
+                // 使用innerText防止HTML注入
+                if (content.startsWith('[') && content.endsWith(']')) {
+                    bubble.classList.add('right-bubble');
+                    bubble.innerText = content.slice(1, -1).trim();
+                } else {
+                    bubble.classList.add('left-bubble');
+                    bubble.innerText = content;
+                }
+                chatContainer.appendChild(bubble);
+            });
+        }
+
+        // 接收来自加载器的数据
+        // 'rawChatText' 这个变量将由加载器注入
+        if (typeof rawChatText !== 'undefined') {
+            initializeChat(rawChatText);
+        }
+    </script>
+</body>
+</html>
