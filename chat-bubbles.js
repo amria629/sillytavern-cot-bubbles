@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         root.style.setProperty('--left-bubble-start', hexToRgba(currentSettings.leftColor1, currentSettings.bubbleOpacity));
         root.style.setProperty('--left-bubble-end', hexToRgba(currentSettings.leftColor2, currentSettings.bubbleOpacity));
         root.style.setProperty('--right-bubble-start', hexToRgba(currentSettings.rightColor1, currentSettings.bubbleOpacity));
-        root.style.setProperty('--right-bubble-end', hexToRgba(currentSettings.rightColor2, current_settings.bubbleOpacity));
+        root.style.setProperty('--right-bubble-end', hexToRgba(currentSettings.rightColor2, currentSettings.bubbleOpacity));
         renderChat(); // 更改头像后需要重绘
         leftColor1Input.value = currentSettings.leftColor1;
         leftColor2Input.value = currentSettings.leftColor2;
@@ -207,3 +207,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     renderChat();
 });
+
