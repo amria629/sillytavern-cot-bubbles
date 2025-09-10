@@ -70,44 +70,46 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.appendChild(messageContainer);
     }
     
-    // ==========================================================
-    // === 【核心修改】重写 renderChat 函数，智能解析 CoT ===
-    // ==========================================================
-    const renderChat = () => {
-        chatContainer.innerHTML = '';
-        if (!dataContainer) return;
-        
-        let rawText = dataContainer.innerHTML; 
+// ====================================================================
+// === 【最终修正版】renderChat 函数，已修复 emoji 替换问题 ===
+// ====================================================================
+const renderChat = () => {
+    chatContainer.innerHTML = '';
+    if (!dataContainer) return;
+    
+    // 1. 获取从酒馆传入的、可能被HTML转义过的原始文本
+    let rawHtml = dataContainer.innerHTML; 
 
-        // 1. 先把所有的 <emoji> 标签替换成图片
-        // 使用 .replace() 而不是 .replaceAll() 以获得更好的浏览器兼容性
-        const emojiRegex = /<emoji>(.+?)<\/emoji>/g;
-        let processedText = rawText.replace(emojiRegex, 
-            '<img src="https://gitgud.io/mom1/bqb/-/raw/master/$1" style="width: 64px; height: 64px; vertical-align: middle; margin: 2px;" alt="$1">'
-        );
-        
-        // 2. 使用正则表达式按 `[...]` 逻辑块来切分文本
-        // `([\s\S]*?)` 匹配方括号内的任何字符(包括换行符)，括号让分隔符本身也保留在结果数组中
-        const parts = processedText.split(/(\[[\s\S]*?\])/);
+    // 2. 【新增的修复步骤】
+    //    先把被转义的 &lt; 和 &gt; 替换回 < 和 >
+    //    这样我们的 <emoji> 标签就恢复了原样
+    let correctedHtml = rawHtml.replace(/&lt;emoji&gt;/g, '<emoji>')
+                               .replace(/&lt;\/emoji&gt;/g, '</emoji>');
 
-        // 3. 遍历切分后的部分，生成气泡
-        parts.forEach(part => {
-            // 如果部分为空或只包含空格/换行，则跳过
-            if (!part || part.trim() === '') return;
+    // 3. 现在，使用我们原来的正则表达式来处理已经恢复正常的 <emoji> 标签
+    const emojiRegex = /<emoji>(.+?)<\/emoji>/g;
+    let processedText = correctedHtml.replace(emojiRegex, 
+        '<img src="https://gitgud.io/mom1/bqb/-/raw/master/$1" style="width: 128px; height: 128px; vertical-align: middle; margin: 2px;">'
+    );
+    
+    // 4. 后续的逻辑完全不变，按 `[...]` 切分文本
+    const parts = processedText.split(/(\[[\s\S]*?\])/);
 
-            if (part.startsWith('[') && part.endsWith(']')) {
-                // 这是右气泡
-                const content = part.slice(1, -1); // 去掉前后的[]
-                addMessage(content, true);
-            } else {
-                // 这是左气泡
-                addMessage(part, false);
-            }
-        });
+    // 5. 遍历切分后的部分，生成气泡
+    parts.forEach(part => {
+        if (!part || part.trim() === '') return;
 
-        // 滚动到底部
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    };
+        if (part.startsWith('[') && part.endsWith(']')) {
+            const content = part.slice(1, -1);
+            addMessage(content, true);
+        } else {
+            addMessage(part, false);
+        }
+    });
+
+    // 滚动到底部
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+};
     
     // --- 后面的所有代码（设置、保存、加载、拖动等）都保持你原来的样子，它们是完美的 ---
 
@@ -207,3 +209,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     renderChat();
 });
+
