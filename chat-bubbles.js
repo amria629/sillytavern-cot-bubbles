@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
     
-    // addMessage 函数保持原样，它工作得很好
+    // addMessage 函数保持不变，它能很好地处理包含 <img> 标签的内容
     const addMessage = (content, isRightBubble) => {
         if (!content || content.trim() === '') return;
         const messageContainer = document.createElement('div');
@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
         chatBubble.innerHTML = content;
         const avatar = document.createElement('img');
         avatar.className = 'avatar';
-
-        // 检查是否是纯图片气泡的逻辑
+        
+        // 检查是否是纯图片气泡的逻辑依然有效，因为酒馆会先把表情包转成<img>
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = content;
         if (tempDiv.children.length === 1 && tempDiv.children[0].tagName === 'IMG' && tempDiv.textContent.trim() === '') {
@@ -70,56 +70,50 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.appendChild(messageContainer);
     }
     
-// ====================================================================
-// === 【最终修正版】renderChat 函数，已修复 emoji 替换问题 ===
-// ====================================================================
-const renderChat = () => {
-    chatContainer.innerHTML = '';
-    if (!dataContainer) return;
+    // ==========================================================
+    // === 【纯净版】renderChat 函数，已移除所有表情包处理逻辑 ===
+    // ==========================================================
+    const renderChat = () => {
+        chatContainer.innerHTML = '';
+        if (!dataContainer) return;
+        
+        // 直接获取酒馆处理后的 HTML 内容
+        const processedHtml = dataContainer.innerHTML;
+        
+        // 使用正则表达式按 `[...]` 逻辑块来切分文本
+        const parts = processedHtml.split(/(\[[\s\S]*?\])/);
+
+        // 遍历切分后的部分，生成气泡
+        parts.forEach(part => {
+            if (!part || part.trim() === '') return;
+
+            if (part.startsWith('[') && part.endsWith(']')) {
+                // 这是右气泡
+                const content = part.slice(1, -1);
+                addMessage(content, true);
+            } else {
+                // 这是左气泡
+                addMessage(part, false);
+            }
+        });
+
+        // 滚动到底部
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    };
     
-    // 1. 获取从酒馆传入的、可能被HTML转义过的原始文本
-    let rawHtml = dataContainer.innerHTML; 
-
-    // 2. 【新增的修复步骤】
-    //    先把被转义的 &lt; 和 &gt; 替换回 < 和 >
-    //    这样我们的 <emoji> 标签就恢复了原样
-    let correctedHtml = rawHtml.replace(/&lt;emoji&gt;/g, '<emoji>')
-                               .replace(/&lt;\/emoji&gt;/g, '</emoji>');
-
-    // 3. 现在，使用我们原来的正则表达式来处理已经恢复正常的 <emoji> 标签
-    const emojiRegex = /<emoji>(.+?)<\/emoji>/g;
-    let processedText = correctedHtml.replace(emojiRegex, 
-        '<img src="https://gitgud.io/mom1/bqb/-/raw/master/$1" style="width: 128px; height: 128px; vertical-align: middle; margin: 2px;">'
-    );
+    // --- 后面的所有代码（设置、保存、加载、拖动等）都保持不变 ---
     
-    // 4. 后续的逻辑完全不变，按 `[...]` 切分文本
-    const parts = processedText.split(/(\[[\s\S]*?\])/);
-
-    // 5. 遍历切分后的部分，生成气泡
-    parts.forEach(part => {
-        if (!part || part.trim() === '') return;
-
-        if (part.startsWith('[') && part.endsWith(']')) {
-            const content = part.slice(1, -1);
-            addMessage(content, true);
-        } else {
-            addMessage(part, false);
-        }
-    });
-
-    // 滚动到底部
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-};
-    
-    // --- 后面的所有代码（设置、保存、加载、拖动等）都保持你原来的样子，它们是完美的 ---
-
     const applySettings = () => {
         root.style.setProperty('--mobile-bg', `url('${currentSettings.bgUrl}')`);
         root.style.setProperty('--left-bubble-start', hexToRgba(currentSettings.leftColor1, currentSettings.bubbleOpacity));
         root.style.setProperty('--left-bubble-end', hexToRgba(currentSettings.leftColor2, currentSettings.bubbleOpacity));
         root.style.setProperty('--right-bubble-start', hexToRgba(currentSettings.rightColor1, currentSettings.bubbleOpacity));
-        root.style.setProperty('--right-bubble-end', hexToRgba(currentSettings.rightColor2, current_settings.bubbleOpacity));
-        renderChat(); // 更改头像后需要重绘
+        root.style.setProperty('--right-bubble-end', hexToRgba(currentSettings.rightColor2, currentSettings.bubbleOpacity));
+        
+        // 重新渲染以应用新头像
+        renderChat();
+
+        // 更新设置面板的值
         leftColor1Input.value = currentSettings.leftColor1;
         leftColor2Input.value = currentSettings.leftColor2;
         rightColor1Input.value = currentSettings.rightColor1;
@@ -209,4 +203,3 @@ const renderChat = () => {
     loadSettings();
     renderChat();
 });
-
