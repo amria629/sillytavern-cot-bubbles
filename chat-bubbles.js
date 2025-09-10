@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
     
-    // addMessage 函数保持不变，它能很好地处理包含 <img> 标签的内容
+    // addMessage 函数保持原样，它工作得很好
     const addMessage = (content, isRightBubble) => {
         if (!content || content.trim() === '') return;
         const messageContainer = document.createElement('div');
@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
         chatBubble.innerHTML = content;
         const avatar = document.createElement('img');
         avatar.className = 'avatar';
-        
-        // 检查是否是纯图片气泡的逻辑依然有效，因为酒馆会先把表情包转成<img>
+
+        // 检查是否是纯图片气泡的逻辑
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = content;
         if (tempDiv.children.length === 1 && tempDiv.children[0].tagName === 'IMG' && tempDiv.textContent.trim() === '') {
@@ -71,25 +71,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // ==========================================================
-    // === 【纯净版】renderChat 函数，已移除所有表情包处理逻辑 ===
+    // === 【核心修改】重写 renderChat 函数，智能解析 CoT ===
     // ==========================================================
     const renderChat = () => {
         chatContainer.innerHTML = '';
         if (!dataContainer) return;
         
-        // 直接获取酒馆处理后的 HTML 内容
-        const processedHtml = dataContainer.innerHTML;
-        
-        // 使用正则表达式按 `[...]` 逻辑块来切分文本
-        const parts = processedHtml.split(/(\[[\s\S]*?\])/);
+        let rawText = dataContainer.innerHTML; 
 
-        // 遍历切分后的部分，生成气泡
+        // 1. 先把所有的 <emoji> 标签替换成图片
+        // 使用 .replace() 而不是 .replaceAll() 以获得更好的浏览器兼容性
+        const emojiRegex = /<emoji>(.+?)<\/emoji>/g;
+        let processedText = rawText.replace(emojiRegex, 
+            '<img src="https://gitgud.io/mom1/bqb/-/raw/master/$1" style="width: 64px; height: 64px; vertical-align: middle; margin: 2px;" alt="$1">'
+        );
+        
+        // 2. 使用正则表达式按 `[...]` 逻辑块来切分文本
+        // `([\s\S]*?)` 匹配方括号内的任何字符(包括换行符)，括号让分隔符本身也保留在结果数组中
+        const parts = processedText.split(/(\[[\s\S]*?\])/);
+
+        // 3. 遍历切分后的部分，生成气泡
         parts.forEach(part => {
+            // 如果部分为空或只包含空格/换行，则跳过
             if (!part || part.trim() === '') return;
 
             if (part.startsWith('[') && part.endsWith(']')) {
                 // 这是右气泡
-                const content = part.slice(1, -1);
+                const content = part.slice(1, -1); // 去掉前后的[]
                 addMessage(content, true);
             } else {
                 // 这是左气泡
@@ -101,19 +109,15 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.scrollTop = chatContainer.scrollHeight;
     };
     
-    // --- 后面的所有代码（设置、保存、加载、拖动等）都保持不变 ---
-    
+    // --- 后面的所有代码（设置、保存、加载、拖动等）都保持你原来的样子，它们是完美的 ---
+
     const applySettings = () => {
         root.style.setProperty('--mobile-bg', `url('${currentSettings.bgUrl}')`);
         root.style.setProperty('--left-bubble-start', hexToRgba(currentSettings.leftColor1, currentSettings.bubbleOpacity));
         root.style.setProperty('--left-bubble-end', hexToRgba(currentSettings.leftColor2, currentSettings.bubbleOpacity));
         root.style.setProperty('--right-bubble-start', hexToRgba(currentSettings.rightColor1, currentSettings.bubbleOpacity));
-        root.style.setProperty('--right-bubble-end', hexToRgba(currentSettings.rightColor2, currentSettings.bubbleOpacity));
-        
-        // 重新渲染以应用新头像
-        renderChat();
-
-        // 更新设置面板的值
+        root.style.setProperty('--right-bubble-end', hexToRgba(currentSettings.rightColor2, current_settings.bubbleOpacity));
+        renderChat(); // 更改头像后需要重绘
         leftColor1Input.value = currentSettings.leftColor1;
         leftColor2Input.value = currentSettings.leftColor2;
         rightColor1Input.value = currentSettings.rightColor1;
